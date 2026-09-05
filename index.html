@@ -321,7 +321,7 @@
       </div>
       <div class="pied__bloc">
         <p class="pied__titre">Contact</p>
-        <p><a class="pied__lien" href="mailto:contact@maderoshape.fr">Contactez-nous</a></p>
+        <p><a class="pied__lien" href="mailto:maderoshape1@gmail.com">Contactez-nous</a></p>
       </div>
       <div class="pied__bloc">
         <p class="pied__titre">Informations</p>
@@ -330,6 +330,18 @@
           et sans acte thérapeutique. Acompte de 10 € non remboursable en cas
           d'annulation moins de 24 h avant le rendez-vous.
         </p>
+        <ul class="pied__legal">
+          <li>
+            <button class="pied__lien pied__lien--bouton" type="button" data-legal="mentions">
+              Mentions légales
+            </button>
+          </li>
+          <li>
+            <button class="pied__lien pied__lien--bouton" type="button" data-legal="confidentialite">
+              Politique de confidentialité
+            </button>
+          </li>
+        </ul>
       </div>
     </div>
     <p class="pied__copyright">© 2026 MaderoShape — Tous droits réservés.</p>
@@ -521,9 +533,109 @@
     </div>
   </div>
 
+  <!-- ============ MODALE LÉGALE ============ -->
+  <div class="modale" id="modale-legal" hidden>
+    <div class="modale__fond" data-fermer-legal></div>
+
+    <div class="modale__boite modale__boite--texte" role="dialog" aria-modal="true"
+         aria-labelledby="legal-titre">
+
+      <header class="modale__entete">
+        <h2 class="modale__titre" id="legal-titre">Mentions légales</h2>
+        <button class="modale__fermer" type="button" data-fermer-legal
+                aria-label="Fermer">&times;</button>
+      </header>
+
+      <div class="modale__corps">
+
+        <!-- ---------- Mentions légales ---------- -->
+        <section class="legal" data-panneau="mentions">
+          <h3 class="legal__titre">Éditeur du site</h3>
+          <p class="legal__texte">
+            <strong>MaderoShape</strong> — Cabinet d'esthétique<br>
+            Madérothérapie · Lipocavitation · Radiofréquence<br>
+            Région parisienne
+          </p>
+
+          <dl class="legal__liste">
+            <div class="legal__ligne">
+              <dt>Responsable de la publication</dt>
+              <dd class="legal__acompleter">[Nom à compléter]</dd>
+            </div>
+            <div class="legal__ligne">
+              <dt>Statut</dt>
+              <dd>En cours d'immatriculation</dd>
+            </div>
+            <div class="legal__ligne">
+              <dt>Contact</dt>
+              <dd><a class="legal__lien" href="mailto:maderoshape1@gmail.com">maderoshape1@gmail.com</a></dd>
+            </div>
+          </dl>
+
+          <h3 class="legal__titre">Hébergement</h3>
+          <dl class="legal__liste">
+            <div class="legal__ligne">
+              <dt>Site</dt>
+              <dd>GitHub Pages — GitHub, Inc., San Francisco, CA, USA</dd>
+            </div>
+            <div class="legal__ligne">
+              <dt>Base de données</dt>
+              <dd>Supabase, Inc., San Francisco, CA, USA (région UE — Irlande)</dd>
+            </div>
+          </dl>
+        </section>
+
+        <!-- ---------- Politique de confidentialité ---------- -->
+        <section class="legal" data-panneau="confidentialite" hidden>
+          <h3 class="legal__titre">Données collectées</h3>
+          <p class="legal__texte">
+            Lors de la prise de rendez-vous, nous collectons votre nom et votre
+            numéro de téléphone. Ces données sont utilisées uniquement pour la
+            gestion de votre rendez-vous et la communication avec l'esthéticienne.
+          </p>
+
+          <h3 class="legal__titre">Stockage</h3>
+          <p class="legal__texte">
+            Vos données sont stockées de manière sécurisée sur les serveurs de
+            Supabase (Union européenne — Irlande). Elles ne sont ni vendues ni
+            partagées avec des tiers.
+          </p>
+
+          <h3 class="legal__titre">Durée de conservation</h3>
+          <p class="legal__texte">
+            Les données de réservation sont conservées pendant la durée nécessaire
+            à la gestion du rendez-vous. Les réservations non confirmées sont
+            automatiquement expirées après 24 heures.
+          </p>
+
+          <h3 class="legal__titre">Vos droits</h3>
+          <p class="legal__texte">
+            Conformément au RGPD, vous disposez d'un droit d'accès, de
+            rectification et de suppression de vos données. Pour exercer ces
+            droits, contactez-nous à :
+            <a class="legal__lien" href="mailto:maderoshape1@gmail.com">maderoshape1@gmail.com</a>
+          </p>
+
+          <h3 class="legal__titre">Paiement</h3>
+          <p class="legal__texte">
+            Aucune donnée bancaire n'est collectée par le site. Les paiements sont
+            gérés directement par PayPal et Wero, selon leurs propres politiques
+            de confidentialité.
+          </p>
+        </section>
+
+      </div>
+
+      <div class="modale__pied">
+        <button class="btn btn--fantome btn--bloc" type="button" data-fermer-legal>Fermer</button>
+      </div>
+    </div>
+  </div>
+
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
   <script src="js/config.js"></script>
+  <script src="js/_stub-test.js"></script>
   <script src="js/app.js"></script>
 </body>
 </html>

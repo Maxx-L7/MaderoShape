@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Traitement du rendez-vous — MaderoShape</title>
+  <meta name="robots" content="noindex, nofollow">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600;700&amp;family=Lato:wght@300;400;700&amp;display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body class="page-simple">
+
+  <header class="entete">
+    <div class="conteneur entete__interieur">
+      <a class="logo" href="index.html">
+        <span class="logo__nom">MaderoShape</span>
+        <span class="logo__baseline">Cabinet d'esthétique — Madérothérapie · Lipocavitation · Radiofréquence</span>
+      </a>
+    </div>
+  </header>
+
+  <main class="conteneur page-simple__corps">
+    <section class="fiche-etat" aria-live="polite">
+
+      <p class="fiche-etat__icone" id="etat-icone" aria-hidden="true">⏳</p>
+      <h1 class="fiche-etat__titre" id="etat-titre">Traitement en cours…</h1>
+      <p class="fiche-etat__texte" id="etat-texte">
+        Un instant, nous mettons le rendez-vous à jour.
+      </p>
+
+      <p class="fiche-etat__detail" id="etat-detail" hidden></p>
+
+      <a class="btn btn--fantome btn--grand fiche-etat__retour" href="index.html">
+        Retour au site
+      </a>
+    </section>
+  </main>
+
+  <footer class="pied pied--simple">
+    <p class="pied__copyright">© 2026 MaderoShape — Tous droits réservés.</p>
+  </footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="js/config.js"></script>
+  <script src="js/_stub-test.js"></script>
+  <script src="js/confirmer.js"></script>
+</body>
+</html>

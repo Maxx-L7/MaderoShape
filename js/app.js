@@ -93,6 +93,7 @@
     acompte: 10,
     paypalMeUrl: '',
     weroNumero: '06 64 45 03 37',
+    siteUrl: '',
     emailjs: null
   };
 
@@ -215,6 +216,14 @@
   function majusculeInitiale(texte) {
     var chaine = String(texte || '');
     return chaine.charAt(0).toUpperCase() + chaine.slice(1);
+  }
+
+  /**
+   * Adresse publique du site, sans barre oblique finale.
+   * @returns {string} URL de base, ou chaîne vide si non configurée
+   */
+  function adresseSite() {
+    return String(reglage('siteUrl') || '').trim().replace(/\/+$/, '');
   }
 
   /**
@@ -468,11 +477,12 @@
       return Promise.resolve([]);
     }
 
+    // Appel de la fonction creneaux_occupes plutôt que lecture directe
+    // de la table : le site n'a jamais accès aux noms ni aux téléphones.
+    // La fonction écarte aussi les demandes 'en_attente' de plus de 24 h,
+    // dont le créneau redevient disponible.
     return clientSupabase
-      .from('reservations')
-      .select('heure, duree, statut')
-      .eq('date_rdv', cle)
-      .neq('statut', 'annule')
+      .rpc('creneaux_occupes', { jour: cle })
       .then(function (reponse) {
         if (reponse.error) {
           throw reponse.error;
@@ -482,29 +492,47 @@
   }
 
   /**
-   * Enregistre un rendez-vous dans Supabase.
+   * Enregistre un rendez-vous et récupère son identifiant.
+   *
+   * Passe par la fonction inserer_reservation plutôt que par un INSERT
+   * direct : le site a besoin de l'id de la ligne créée pour construire
+   * les liens de l'e-mail, or le relire avec .insert().select() exigerait
+   * une politique SELECT sur la table — supprimée pour protéger les noms
+   * et les téléphones (cf. sql/migration_v2_rgpd.sql).
+   *
+   * La fonction ne renvoie que l'UUID, et force elle-même le statut à
+   * 'en_attente'.
+   *
    * @param {Object} rdv données du rendez-vous
-   * @returns {Promise<Object>} ligne insérée
+   * @returns {Promise<string>} identifiant de la réservation créée
    */
   function enregistrerReservation(rdv) {
     if (!supabaseConfigure) {
       return Promise.reject(new Error(
-        'La connexion à la base de réservations n\'est pas configurée.'
+        "La connexion à la base de réservations n'est pas configurée."
       ));
     }
 
     return clientSupabase
-      .from('reservations')
-      .insert([rdv])
-      .select()
+      .rpc('inserer_reservation', {
+        p_prestation: rdv.prestation,
+        p_prix: rdv.prix,
+        p_date_rdv: rdv.date_rdv,
+        p_heure: rdv.heure,
+        p_duree: rdv.duree,
+        p_nom_cliente: rdv.nom_cliente,
+        p_telephone: rdv.telephone
+      })
       .then(function (reponse) {
         if (reponse.error) {
           throw reponse.error;
         }
+        if (!reponse.data) {
+          throw new Error('Aucun identifiant renvoyé par inserer_reservation.');
+        }
         return reponse.data;
       });
   }
-
 
   /* ------------------------------------------------------
      2.5.bis Notification e-mail de l'esthéticienne (EmailJS)
@@ -580,12 +608,29 @@
   }
 
   /**
+   * Construit un lien « Confirmer » ou « Annuler » pour l'e-mail.
+   * @param {string} identifiant UUID de la réservation
+   * @param {string} action 'confirmer' ou 'annuler'
+   * @returns {string} URL absolue, ou chaîne vide si siteUrl manque
+   */
+  function lienTraitement(identifiant, action) {
+    var base = adresseSite();
+
+    if (!base || !identifiant) {
+      return '';
+    }
+    return base + '/confirmer.html?id=' + encodeURIComponent(identifiant) +
+      '&action=' + action;
+  }
+
+  /**
    * Envoie la notification de nouvelle demande à l'esthéticienne.
    * N'attend jamais de réponse : les erreurs sont journalisées et
    * la cliente n'en voit rien.
    * @param {Object} rdv rendez-vous tel qu'inséré en base
+   * @param {string} identifiant UUID renvoyé par inserer_reservation
    */
-  function notifierCabinet(rdv) {
+  function notifierCabinet(rdv, identifiant) {
     if (!emailjsConfigure) {
       return;
     }
@@ -600,7 +645,9 @@
       heure: String(rdv.heure).replace(':', 'h'),
       duree: rdv.duree,
       nom: rdv.nom_cliente,
-      telephone: telephoneLisible(rdv.telephone)
+      telephone: telephoneLisible(rdv.telephone),
+      lien_confirmation: lienTraitement(identifiant, 'confirmer'),
+      lien_annulation: lienTraitement(identifiant, 'annuler')
     };
 
     try {
@@ -1074,6 +1121,8 @@
       return;
     }
 
+    // Ni id ni statut : la fonction inserer_reservation génère l'un
+    // et force l'autre à 'en_attente'.
     var rdv = {
       prestation: etat.nom,
       prix: etat.prix,
@@ -1081,8 +1130,7 @@
       heure: etat.heureChoisie,
       duree: etat.duree,
       nom_cliente: elements.champNom.value.trim(),
-      telephone: normaliserTelephone(elements.champTelephone.value),
-      statut: 'en_attente'
+      telephone: normaliserTelephone(elements.champTelephone.value)
     };
 
     etat.envoiEnCours = true;
@@ -1091,13 +1139,13 @@
     elements.boutonConfirmer.textContent = 'Enregistrement…';
 
     enregistrerReservation(rdv)
-      .then(function (lignes) {
+      .then(function (identifiant) {
         etat.envoiEnCours = false;
         etat.nomCliente = rdv.nom_cliente;
-        etat.reservationId = lignes && lignes[0] ? lignes[0].id : null;
+        etat.reservationId = identifiant;
 
         // Notification de l'esthéticienne : lancée ici, jamais attendue.
-        notifierCabinet(rdv);
+        notifierCabinet(rdv, identifiant);
 
         allerAuPaiement();
       })
@@ -1340,4 +1388,91 @@
       'les créneaux s\'afficheront mais aucun rendez-vous ne pourra être enregistré.'
     );
   }
+})();
+
+
+/* =========================================================
+   3. MODALE LÉGALE (mentions légales / confidentialité)
+   ========================================================= */
+(function () {
+  'use strict';
+
+  var modale = document.getElementById('modale-legal');
+
+  if (!modale) {
+    return;
+  }
+
+  var titre = document.getElementById('legal-titre');
+  var panneaux = modale.querySelectorAll('[data-panneau]');
+  var boite = modale.querySelector('.modale__boite');
+  var declencheur = null;
+
+  var TITRES = {
+    mentions: 'Mentions légales',
+    confidentialite: 'Politique de confidentialité'
+  };
+
+  /**
+   * Ouvre la modale sur l'un des deux textes.
+   * @param {string} panneau 'mentions' ou 'confidentialite'
+   * @param {Element} bouton bouton du pied de page qui a déclenché l'ouverture
+   */
+  function ouvrir(panneau, bouton) {
+    titre.textContent = TITRES[panneau] || TITRES.mentions;
+
+    panneaux.forEach(function (section) {
+      section.hidden = section.getAttribute('data-panneau') !== panneau;
+    });
+
+    declencheur = bouton || null;
+    modale.hidden = false;
+    document.body.classList.add('corps--fige');
+
+    if (boite) {
+      boite.scrollTop = 0;
+    }
+
+    window.requestAnimationFrame(function () {
+      var fermeture = modale.querySelector('.modale__fermer');
+      if (fermeture) {
+        fermeture.focus();
+      }
+    });
+  }
+
+  /**
+   * Ferme la modale et rend le focus au lien d'origine.
+   */
+  function fermer() {
+    modale.hidden = true;
+    document.body.classList.remove('corps--fige');
+
+    if (declencheur && document.contains(declencheur)) {
+      declencheur.focus();
+    }
+    declencheur = null;
+  }
+
+  document.addEventListener('click', function (evenement) {
+    if (!(evenement.target instanceof Element)) {
+      return;
+    }
+
+    var ouverture = evenement.target.closest('[data-legal]');
+    if (ouverture) {
+      ouvrir(ouverture.getAttribute('data-legal'), ouverture);
+      return;
+    }
+
+    if (!modale.hidden && evenement.target.closest('[data-fermer-legal]')) {
+      fermer();
+    }
+  });
+
+  document.addEventListener('keydown', function (evenement) {
+    if (evenement.key === 'Escape' && !modale.hidden) {
+      fermer();
+    }
+  });
 })();

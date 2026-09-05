@@ -1491,3 +1491,222 @@ button {
     gap: 18px;
   }
 }
+
+/* =========================================================
+   18. Mentions légales et confidentialité
+   ========================================================= */
+
+/* ---------- Liens dans le pied de page ---------- */
+.pied__legal {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 18px;
+  margin-top: 14px;
+}
+
+.pied__lien--bouton {
+  padding: 0;
+  border: none;
+  border-bottom: 1px solid var(--couleur-accent);
+  background: none;
+  /* Un <button> n'hérite ni de la couleur ni de la police du parent :
+     sans cette ligne, le texte s'affiche en noir sur le fond brun. */
+  color: inherit;
+  font-family: inherit;
+  font-size: .88rem;
+  text-align: left;
+}
+
+/* ---------- Modale de texte ---------- */
+.modale__boite--texte {
+  max-width: 680px;
+}
+
+.modale__pied {
+  position: sticky;
+  bottom: 0;
+  padding: 14px 20px 18px;
+  background: var(--couleur-fond);
+  border-top: 1px solid var(--couleur-bordure);
+}
+
+.legal__titre {
+  margin-top: 22px;
+  margin-bottom: 8px;
+  font-size: 1.05rem;
+  color: var(--couleur-accent-fonce);
+}
+
+.legal__titre:first-child {
+  margin-top: 0;
+}
+
+.legal__texte {
+  font-size: .92rem;
+  line-height: 1.7;
+  color: var(--couleur-texte-doux);
+}
+
+.legal__lien {
+  color: var(--couleur-accent-fonce);
+  border-bottom: 1px solid var(--couleur-accent);
+  overflow-wrap: anywhere;
+}
+
+.legal__liste {
+  margin: 0;
+  padding: 14px 16px;
+  background: var(--couleur-fond-alt);
+  border: 1px solid var(--couleur-bordure);
+  border-radius: var(--rayon);
+}
+
+.legal__ligne {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 0;
+}
+
+.legal__ligne + .legal__ligne {
+  border-top: 1px dashed var(--couleur-bordure);
+}
+
+.legal__liste dt {
+  font-size: .74rem;
+  font-weight: 700;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--couleur-texte-doux);
+}
+
+.legal__liste dd {
+  margin: 0;
+  font-size: .92rem;
+  color: var(--couleur-primaire);
+  overflow-wrap: anywhere;
+}
+
+/* Signale visuellement ce qui reste à renseigner. */
+.legal__acompleter {
+  color: var(--couleur-accent-fonce);
+  font-style: italic;
+}
+
+@media (min-width: 600px) {
+  .legal__ligne {
+    flex-direction: row;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 18px;
+  }
+
+  .legal__liste dd {
+    text-align: right;
+  }
+
+  .modale__pied {
+    padding: 16px 26px 20px;
+    text-align: right;
+  }
+}
+
+/* =========================================================
+   19. Page confirmer.html
+   ========================================================= */
+.page-simple {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  background:
+    radial-gradient(80% 60% at 50% 0%, rgba(240, 221, 190, .6) 0%, rgba(240, 221, 190, 0) 60%),
+    var(--couleur-fond);
+}
+
+.page-simple__corps {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+  padding-top: 40px;
+  padding-bottom: 56px;
+}
+
+.fiche-etat {
+  width: 100%;
+  max-width: 520px;
+  padding: 32px 24px 28px;
+  text-align: center;
+  background: var(--couleur-surface);
+  border: 1px solid var(--couleur-bordure);
+  border-top: 4px solid var(--couleur-accent);
+  border-radius: var(--rayon-grand);
+  box-shadow: var(--ombre-carte);
+}
+
+/* Une couleur de liseré par issue, pour identifier le résultat
+   d'un coup d'œil sans avoir à lire. */
+.fiche-etat--succes {
+  border-top-color: #4C8A5A;
+}
+
+.fiche-etat--annule {
+  border-top-color: #B3452F;
+}
+
+.fiche-etat--neutre {
+  border-top-color: var(--couleur-bordure);
+}
+
+.fiche-etat--erreur {
+  border-top-color: #B3452F;
+}
+
+.fiche-etat__icone {
+  font-size: 3rem;
+  line-height: 1;
+  margin-bottom: 14px;
+}
+
+.fiche-etat__titre {
+  font-size: clamp(1.35rem, 5vw, 1.7rem);
+  margin-bottom: 10px;
+}
+
+.fiche-etat__texte {
+  font-size: 1rem;
+  color: var(--couleur-texte-doux);
+}
+
+.fiche-etat__detail {
+  margin-top: 16px;
+  padding: 11px 14px;
+  border-radius: var(--rayon);
+  background: var(--couleur-fond-alt);
+  font-size: .85rem;
+  color: var(--couleur-texte-doux);
+}
+
+.fiche-etat__detail[hidden] {
+  display: none;
+}
+
+.fiche-etat__retour {
+  margin-top: 26px;
+}
+
+.pied--simple {
+  padding: 22px 0 18px;
+}
+
+.pied--simple .pied__copyright {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: none;
+}
+
+@media (min-width: 600px) {
+  .fiche-etat {
+    padding: 40px 36px 34px;
+  }
+}

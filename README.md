@@ -52,6 +52,17 @@ dépendance npm.
   la réservation est quand même enregistrée et le parcours se termine
   normalement.
 
+### V2 — protection des données et confirmation en un clic
+
+- Le site ne peut plus lire la table des réservations : il interroge une
+  fonction qui ne renvoie que des horaires.
+- Une demande jamais payée libère son créneau au bout de 24 heures.
+- L'e-mail de notification contient deux liens « Confirmer » et
+  « Annuler » : un clic suffit à traiter le rendez-vous, sans ouvrir
+  Supabase.
+- Mentions légales et politique de confidentialité accessibles depuis
+  le pied de page.
+
 ---
 
 ## Structure des fichiers
@@ -59,14 +70,17 @@ dépendance npm.
 ```
 .
 ├── index.html        # page complète + modale de réservation
+├── confirmer.html    # page ouverte par les liens de l'e-mail
 ├── css/
 │   └── style.css     # styles (variables CSS + media queries mobile-first)
 ├── js/
 │   ├── config.js     # ⚙️ réglages : horaires, congés, Supabase, paiement, e-mail
-│   └── app.js        # défilement doux + parcours de réservation
+│   ├── app.js        # défilement doux + parcours de réservation
+│   └── confirmer.js  # traitement d'un rendez-vous depuis l'e-mail
 ├── sql/
-│   ├── schema.sql             # à exécuter en premier
-│   └── migration_sprint3.sql  # à exécuter ensuite (paiement)
+│   ├── schema.sql              # 1. à exécuter en premier
+│   ├── migration_sprint3.sql   # 2. paiement
+│   └── migration_v2_rgpd.sql   # 3. RGPD + expiration 24 h
 └── README.md
 ```
 
@@ -84,9 +98,36 @@ dépendance npm.
 2. Dans le projet : **SQL Editor** → **New query**.
 3. Coller l'intégralité de `sql/schema.sql`, puis **Run**.
 4. Nouvelle requête : coller `sql/migration_sprint3.sql`, puis **Run**.
-   Ce second script ajoute la colonne `paypal_order_id` et autorise la
+   Ce script ajoute la colonne `paypal_order_id` et autorise la
    confirmation après paiement. **Lisez l'avertissement de sécurité qu'il
    contient** avant de le lancer.
+5. Nouvelle requête : coller `sql/migration_v2_rgpd.sql`, puis **Run**.
+
+🚨 **Cette migration est obligatoire avant de déployer la V2.** Elle
+installe deux fonctions dont le site a désormais besoin. Sans elle :
+
+- le calendrier ne peut plus vérifier les créneaux déjà pris et affiche
+  « Impossible de vérifier les créneaux déjà pris » à chaque date ;
+- les liens « Confirmer » et « Annuler » des e-mails affichent une
+  erreur ;
+- les noms et téléphones des clientes restent lisibles par n'importe
+  quel visiteur.
+
+Pour vérifier qu'elle est bien passée, exécuter dans le SQL Editor :
+
+```sql
+select * from creneaux_occupes(current_date);
+```
+
+Si la réponse est une erreur « function does not exist », la migration
+n'a pas été exécutée.
+
+⚠️ **La région du projet doit correspondre à la politique de
+confidentialité affichée sur le site**, qui annonce un hébergement en
+Irlande. Si vous avez choisi Francfort ou Paris, corrigez la phrase
+« Union européenne — Irlande » dans `index.html` (section
+`data-panneau="confidentialite"`). Une mention inexacte sur ce point est
+une non-conformité.
 
 ### 2. Brancher le site
 
@@ -158,12 +199,18 @@ Le site ne vérifie aucun paiement. Après chaque réservation :
 1. Vérifier la réception du virement (notification PayPal, ou application
    bancaire pour Wero). La cliente est invitée à indiquer son nom en
    référence.
-2. Dans Supabase → **Table Editor** → `reservations`, passer la ligne
-   correspondante de `en_attente` à `confirmee`.
+2. Dans l'e-mail de notification, cliquer **✅ Confirmer ce RDV**. Une
+   page s'ouvre et annonce « Rendez-vous confirmé ! ».
 3. Contacter la cliente pour confirmer le rendez-vous.
 
-Les demandes sans paiement au bout de quelques jours : passer la ligne en
-`annule` pour libérer le créneau.
+Si l'acompte n'arrive pas, cliquer **❌ Annuler ce RDV** dans le même
+e-mail : le créneau redevient immédiatement disponible.
+
+Les deux liens ne fonctionnent qu'une fois. Un second clic affiche
+« Ce rendez-vous a déjà été traité » — c'est normal, rien n'est cassé.
+
+Le passage par le Table Editor de Supabase reste possible à tout moment
+(colonne `statut`), par exemple si l'e-mail a été perdu.
 
 ### 6. Recevoir les demandes par e-mail
 
@@ -208,6 +255,10 @@ Vous avez une nouvelle demande de rendez-vous :
 L'acompte de 10 € sera envoyé par PayPal ou Wero.
 Vérifiez votre application PayPal ou bancaire.
 
+── Traiter ce rendez-vous ──
+✅ Confirmer : {{lien_confirmation}}
+❌ Annuler : {{lien_annulation}}
+
 ---
 MaderoShape — Notification automatique
 ```
@@ -215,8 +266,29 @@ MaderoShape — Notification automatique
 Enregistrer, puis noter le **Template ID**.
 
 ⚠️ Les noms entre accolades doivent être écrits **exactement** ainsi :
-`prestation`, `prix`, `date`, `heure`, `duree`, `nom`, `telephone`.
-Une faute de frappe laisse le champ vide dans l'e-mail reçu.
+`prestation`, `prix`, `date`, `heure`, `duree`, `nom`, `telephone`,
+`lien_confirmation`, `lien_annulation`. Une faute de frappe laisse le
+champ vide dans l'e-mail reçu.
+
+💡 **Pour de vrais boutons cliquables**, basculer l'éditeur EmailJS en
+mode HTML (bouton `<>` dans la barre d'outils) et remplacer les deux
+dernières lignes par :
+
+```html
+<p>
+  <a href="{{lien_confirmation}}"
+     style="background:#4C8A5A;color:#fff;padding:12px 22px;
+            border-radius:999px;text-decoration:none;font-weight:bold">
+    ✅ Confirmer ce RDV
+  </a>
+  &nbsp;&nbsp;
+  <a href="{{lien_annulation}}"
+     style="background:#B3452F;color:#fff;padding:12px 22px;
+            border-radius:999px;text-decoration:none;font-weight:bold">
+    ❌ Annuler ce RDV
+  </a>
+</p>
+```
 
 **d. Récupérer la clé publique.** Menu **Account** → champ
 **Public Key**.
@@ -249,6 +321,98 @@ Dashboard Supabase → **Table Editor** → table `reservations`.
 
 ---
 
+## Protection des données
+
+### Ce que le site peut voir
+
+Le site n'a **aucun accès en lecture** à la table `reservations`. Pour
+afficher les créneaux disponibles, il appelle une fonction
+`creneaux_occupes(jour)` qui ne renvoie que deux colonnes : `heure` et
+`duree`. Ni nom, ni téléphone, ni même l'identifiant de la réservation
+ne transitent par le navigateur.
+
+C'est important : la clé `anon` de `config.js` est publique par
+construction — n'importe qui peut la lire dans le code source du site.
+Tant que la lecture de la table était ouverte, cette clé suffisait à
+récupérer la liste complète de vos clientes avec leurs numéros.
+
+### Vérifier que la fermeture a bien pris
+
+Dans la console du navigateur (F12), sur le site en ligne :
+
+```js
+fetch(CONFIG.supabaseUrl + '/rest/v1/reservations?select=*', {
+  headers: { apikey: CONFIG.supabaseAnonKey }
+}).then(r => r.json()).then(console.log)
+```
+
+Le résultat attendu est un **tableau vide** ou une erreur de permission.
+S'il renvoie des lignes avec des noms, la migration
+`sql/migration_v2_rgpd.sql` n'a pas été exécutée.
+
+Les deux fonctions installées par la migration ne renvoient jamais de
+donnée personnelle : `creneaux_occupes` ne retourne que `heure` et
+`duree`, `traiter_reservation` ne retourne qu'un mot d'état.
+
+### Les liens de l'e-mail
+
+Chaque notification contient l'identifiant de la réservation dans son
+URL. Cet identifiant est un UUID tiré au hasard : il n'est ni devinable
+ni déductible d'un autre. Quiconque possède le lien peut confirmer ou
+annuler ce rendez-vous précis — comme une clé : ne les faites pas suivre.
+
+La page `confirmer.html` n'affiche jamais le nom ni le téléphone de la
+cliente. Elle appelle une fonction `traiter_reservation` qui modifie le
+statut côté serveur et ne renvoie qu'un mot : `confirmee`, `annule` ou
+`deja_traite`.
+
+Si vous changez l'adresse du site (nom de domaine personnalisé, autre
+hébergeur), mettez à jour la clé `siteUrl` dans `js/config.js` : sans
+cela, les liens des e-mails suivants pointeront vers l'ancienne adresse.
+
+### Expiration automatique des créneaux
+
+Une demande jamais payée ne bloque plus son créneau indéfiniment : au
+bout de **24 heures**, une réservation restée `en_attente` cesse d'être
+comptée comme occupée et l'horaire redevient réservable.
+
+- Rien n'est supprimé : la ligne reste visible dans le Table Editor.
+- Une réservation `confirmee` n'expire **jamais**, quel que soit son âge.
+- Conséquence : confirmez les rendez-vous sans trop tarder. Une cliente
+  qui règle son acompte 30 heures après avoir réservé peut voir son
+  créneau repris entre-temps.
+
+Pour changer le délai, modifier `interval '24 hours'` dans la fonction
+`creneaux_occupes` et réexécuter le `create or replace function`.
+
+---
+
+## Mentions légales et confidentialité
+
+Deux liens en pied de page ouvrent les textes correspondants.
+
+**À compléter avant le lancement**, dans `index.html`, section
+`data-panneau="mentions"` :
+
+| Placeholder          | À remplacer par                                  |
+|----------------------|--------------------------------------------------|
+| `[Nom à compléter]`  | nom du responsable de la publication              |
+
+Il apparaît en italique doré sur le site : il se repère d'un coup d'œil
+tant qu'il n'est pas rempli.
+
+La ligne **Statut : En cours d'immatriculation** tient lieu de SIRET pour
+le moment. Dès que le numéro est attribué, remplacer cette ligne par le
+SIRET réel — c'est une mention obligatoire pour une activité
+commerciale déclarée.
+
+Vérifier aussi que l'adresse `maderoshape1@gmail.com` est bien celle qui
+recevra les demandes d'exercice des droits RGPD (accès, rectification,
+suppression) — elle figure à la fois dans les mentions légales, dans la
+politique de confidentialité et dans le lien « Contactez-nous ».
+
+---
+
 ## Ce que le site ne fait pas
 
 Le règlement est **semi-manuel** et assumé comme tel : le site enregistre
@@ -268,9 +432,13 @@ le rendez-vous et affiche comment payer, rien de plus.
   indésirable, et vous ne serez pas prévenu. Supabase reste la source de
   vérité — gardez l'habitude d'y jeter un œil.
 - **La politique UPDATE publique reste active** en base (créée au
-  sprint 3). Elle n'est plus utilisée par le site, mais elle autorise
-  toujours la modification des lignes depuis l'extérieur. Vous pouvez la
-  durcir ou la retirer : voir le bas de `sql/migration_sprint3.sql`.
+  sprint 3). Le site ne l'utilise plus, et le dashboard Supabase n'en a
+  pas besoin : quand vous modifiez une ligne depuis le Table Editor, vous
+  êtes authentifié et les politiques RLS ne s'appliquent pas à vous.
+  Elle permet en revanche à un tiers de modifier vos réservations à
+  l'aveugle — par exemple tout basculer en `annule`. La commande pour la
+  fermer est donnée en bas de `sql/migration_v2_rgpd.sql` ; à rouvrir le
+  jour où un paiement automatique en aurait besoin.
 
 ---
 
@@ -280,16 +448,15 @@ le rendez-vous et affiche comment payer, rien de plus.
       (lien PayPal.me + numéro Wero), confirmation à la main.
 - [x] **Sprint 4** — e-mail de notification au cabinet à chaque nouvelle
       demande.
-- [ ] E-mail de confirmation à la cliente, une fois l'acompte vérifié.
+- [ ] E-mail de confirmation à la cliente, une fois l'acompte vérifié
+      (aujourd'hui, seule l'esthéticienne est notifiée).
 - [ ] Éventuel retour au paiement automatique (PayPal Checkout côté
       serveur), si le suivi manuel des acomptes devient trop lourd.
 - [ ] Renseigner l'adresse exacte du cabinet (placeholder actuel :
       « 📍 Région parisienne »).
-- [ ] Renseigner la véritable adresse e-mail de contact (placeholder actuel :
-      `contact@maderoshape.fr`).
-- [ ] Compléter les mentions légales (raison sociale, SIRET, hébergeur,
-      politique de confidentialité) — la table `reservations` contient des
-      données personnelles, une mention RGPD devient obligatoire.
+
+- [ ] Renseigner le nom du responsable de la publication et le SIRET dans
+      les mentions légales (placeholders `[À compléter]`).
 - [ ] Ajouter des photos du cabinet et des visuels de prestations.
 
 ### Points à surveiller

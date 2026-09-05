@@ -123,7 +123,16 @@ const CONFIG = {
   weroNumero: "06 64 45 03 37",
 
   /* -------------------------------------------------------
-     11. Notification par e-mail (EmailJS)
+     11. Adresse publique du site
+     Sert à construire les liens « Confirmer » et « Annuler »
+     placés dans l'e-mail de notification. Sans barre oblique
+     finale. À changer si le site déménage (nom de domaine
+     personnalisé, autre hébergeur…).
+     ------------------------------------------------------- */
+  siteUrl: "https://maxx-l7.github.io/MaderoShape",
+
+  /* -------------------------------------------------------
+     12. Notification par e-mail (EmailJS)
      À chaque nouvelle demande de rendez-vous, un e-mail est
      envoyé à l'esthéticienne.
 
