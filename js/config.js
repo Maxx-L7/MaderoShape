@@ -142,7 +142,7 @@ const CONFIG = {
      ------------------------------------------------------- */
   emailjs: {
     serviceId: "service_thhxnxc",
-    templateId: "template_emekylf",
+    templateId: "template_i91q2sj",
     publicKey: "D91LsS2NLNjUHa-tk"
   }
 };
