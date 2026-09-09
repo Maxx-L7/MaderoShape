@@ -30,7 +30,7 @@
   --ombre-carte: 0 6px 24px rgba(74, 50, 38, .09);
   --ombre-carte-survol: 0 12px 32px rgba(74, 50, 38, .16);
   --largeur-max: 1240px;
-  --hauteur-entete: 84px;
+  --hauteur-entete: 140px;   /* logo 50 px + baseline sur 4 lignes ; cf. media query 768 px */
   --transition: .22s ease;
 }
 
@@ -188,16 +188,22 @@ button {
 .logo {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  /* Sans align-items, l'image s'étirerait sur toute la largeur du
+     conteneur flex et le logo apparaîtrait déformé. */
+  align-items: flex-start;
+  gap: 6px;
   min-width: 0;
 }
 
-.logo__nom {
-  font-family: var(--police-titre);
-  font-size: 1.5rem;
-  font-weight: 700;
-  letter-spacing: .01em;
-  color: var(--couleur-primaire);
+/* Le logo est une photo : un liseré et des angles arrondis l'ancrent
+   proprement sur le fond crème du site. */
+.logo__image {
+  display: block;
+  height: 50px;
+  width: auto;
+  border-radius: var(--rayon-petit);
+  border: 1px solid var(--couleur-bordure);
+  box-shadow: var(--ombre-douce);
 }
 
 .logo__baseline {
@@ -230,6 +236,16 @@ button {
   max-width: 780px;
   margin-inline: auto;
   text-align: center;
+}
+
+.hero__logo {
+  display: block;
+  height: 180px;
+  width: auto;
+  margin: 0 auto 24px;
+  border-radius: var(--rayon-grand);
+  border: 1px solid var(--couleur-bordure);
+  box-shadow: var(--ombre-carte);
 }
 
 .hero__surtitre {
@@ -615,8 +631,21 @@ button {
 }
 
 @media (min-width: 768px) {
+  :root {
+    --hauteur-entete: 128px;   /* logo 70 px + baseline sur 1 ligne */
+  }
+
   .conteneur {
     padding: 0 32px;
+  }
+
+  .logo__image {
+    height: 70px;
+  }
+
+  .hero__logo {
+    height: 250px;
+    margin-bottom: 30px;
   }
 
   .hero__interieur {

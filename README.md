@@ -79,8 +79,9 @@ dépendance npm.
 │   └── confirmer.js  # traitement d'un rendez-vous depuis l'e-mail
 ├── sql/
 │   ├── schema.sql              # 1. à exécuter en premier
-│   ├── migration_sprint3.sql   # 2. paiement
-│   └── migration_v2_rgpd.sql   # 3. RGPD + expiration 24 h
+│   ├── migration_sprint3.sql         # 2. paiement
+│   ├── migration_v2_rgpd.sql         # 3. RGPD + expiration 24 h
+│   └── migration_v2_confirmation.sql # 4. réservation + confirmation
 └── README.md
 ```
 
@@ -113,14 +114,33 @@ installe deux fonctions dont le site a désormais besoin. Sans elle :
 - les noms et téléphones des clientes restent lisibles par n'importe
   quel visiteur.
 
-Pour vérifier qu'elle est bien passée, exécuter dans le SQL Editor :
+6. Dernière requête : coller `sql/migration_v2_confirmation.sql`, puis
+   **Run**. Elle installe les deux fonctions qui créent une réservation
+   et la confirment depuis l'e-mail.
+
+Pour vérifier que les trois migrations sont bien passées, exécuter dans
+le SQL Editor :
 
 ```sql
 select * from creneaux_occupes(current_date);
+select confirmer_reservation(
+  '00000000-0000-0000-0000-000000000000'::uuid, 'confirmer');
 ```
 
-Si la réponse est une erreur « function does not exist », la migration
-n'a pas été exécutée.
+La première ne doit pas lever d'erreur ; la seconde doit renvoyer
+`introuvable`. Une erreur « function does not exist » signale une
+migration oubliée.
+
+### Comment le site parle à la base
+
+Depuis la V2, le site n'accède plus jamais directement à la table. Tout
+passe par trois fonctions, dont aucune ne renvoie de donnée personnelle :
+
+| Fonction                 | Appelée par      | Renvoie                       |
+|--------------------------|------------------|-------------------------------|
+| `creneaux_occupes`       | `index.html`     | `heure` et `duree` uniquement |
+| `inserer_reservation`    | `index.html`     | l'identifiant de la ligne créée |
+| `confirmer_reservation`  | `confirmer.html` | un mot d'état                 |
 
 ⚠️ **La région du projet doit correspondre à la politique de
 confidentialité affichée sur le site**, qui annonce un hébergement en
@@ -362,9 +382,16 @@ ni déductible d'un autre. Quiconque possède le lien peut confirmer ou
 annuler ce rendez-vous précis — comme une clé : ne les faites pas suivre.
 
 La page `confirmer.html` n'affiche jamais le nom ni le téléphone de la
-cliente. Elle appelle une fonction `traiter_reservation` qui modifie le
-statut côté serveur et ne renvoie qu'un mot : `confirmee`, `annule` ou
-`deja_traite`.
+cliente. Elle appelle `confirmer_reservation`, qui modifie le statut côté
+serveur et ne renvoie qu'un mot :
+
+| Réponse           | Ce que la page affiche                            |
+|-------------------|---------------------------------------------------|
+| `confirme`        | ✅ Rendez-vous confirmé ! La cliente sera contactée |
+| `annule`          | ❌ Rendez-vous annulé. Le créneau est de nouveau disponible |
+| `deja_traite`     | ⚠️ Ce rendez-vous a déjà été traité               |
+| `introuvable`     | ⚠️ Ce rendez-vous n'existe pas                    |
+| `action_invalide` | ⚠️ Lien incorrect                                 |
 
 Si vous changez l'adresse du site (nom de domaine personnalisé, autre
 hébergeur), mettez à jour la clé `siteUrl` dans `js/config.js` : sans
@@ -431,14 +458,15 @@ le rendez-vous et affiche comment payer, rien de plus.
   un registre : quota EmailJS dépassé, panne réseau ou message classé en
   indésirable, et vous ne serez pas prévenu. Supabase reste la source de
   vérité — gardez l'habitude d'y jeter un œil.
-- **La politique UPDATE publique reste active** en base (créée au
-  sprint 3). Le site ne l'utilise plus, et le dashboard Supabase n'en a
-  pas besoin : quand vous modifiez une ligne depuis le Table Editor, vous
+- **Les politiques publiques INSERT et UPDATE ne servent plus à rien.**
+  Depuis que le site passe par des fonctions, plus aucune page n'écrit
+  directement dans la table, et le dashboard Supabase n'en a pas besoin
+  non plus : quand vous modifiez une ligne depuis le Table Editor, vous
   êtes authentifié et les politiques RLS ne s'appliquent pas à vous.
-  Elle permet en revanche à un tiers de modifier vos réservations à
-  l'aveugle — par exemple tout basculer en `annule`. La commande pour la
-  fermer est donnée en bas de `sql/migration_v2_rgpd.sql` ; à rouvrir le
-  jour où un paiement automatique en aurait besoin.
+  Elles permettent en revanche à un tiers d'ajouter des réservations ou
+  d'en modifier à l'aveugle. Les commandes pour les fermer sont données
+  en bas de `sql/migration_v2_confirmation.sql` — testez ensuite une
+  réservation complète pour vous en assurer.
 
 ---
 
