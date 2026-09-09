@@ -69,21 +69,44 @@ dépendance npm.
 
 ```
 .
+├── CNAME             # domaine personnalisé lu par GitHub Pages
 ├── index.html        # page complète + modale de réservation
 ├── confirmer.html    # page ouverte par les liens de l'e-mail
 ├── css/
 │   └── style.css     # styles (variables CSS + media queries mobile-first)
+├── img/
+│   ├── logo.jpg              # logo du hero
+│   ├── logo-small.jpg        # monogramme du header
+│   ├── logo-source.jpg       # original fourni par l'esthéticienne
+│   ├── favicon.ico           # icône d'onglet
+│   ├── apple-touch-icon.png  # icône d'écran d'accueil iOS
+│   └── og-image.jpg          # aperçu de partage (WhatsApp, Facebook)
 ├── js/
 │   ├── config.js     # ⚙️ réglages : horaires, congés, Supabase, paiement, e-mail
 │   ├── app.js        # défilement doux + parcours de réservation
 │   └── confirmer.js  # traitement d'un rendez-vous depuis l'e-mail
 ├── sql/
-│   ├── schema.sql              # 1. à exécuter en premier
+│   ├── schema.sql                    # 1. à exécuter en premier
 │   ├── migration_sprint3.sql         # 2. paiement
 │   ├── migration_v2_rgpd.sql         # 3. RGPD + expiration 24 h
 │   └── migration_v2_confirmation.sql # 4. réservation + confirmation
 └── README.md
 ```
+
+### Le domaine
+
+Le site répond sur **https://maderoshape.fr**, servi par GitHub Pages.
+Le fichier `CNAME` à la racine indique le domaine à GitHub : il doit
+rester présent et ne contenir que `maderoshape.fr`.
+
+Trois endroits mentionnent cette adresse et doivent rester cohérents si
+le site déménage un jour :
+
+| Emplacement                        | Rôle                                  |
+|------------------------------------|---------------------------------------|
+| `CNAME`                            | domaine servi par GitHub Pages         |
+| `js/config.js`, clé `siteUrl`      | liens « Confirmer » / « Annuler » des e-mails |
+| `index.html`, `og:url` et `og:image` | aperçu de partage sur les réseaux    |
 
 ---
 

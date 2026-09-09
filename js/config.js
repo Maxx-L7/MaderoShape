@@ -129,7 +129,7 @@ const CONFIG = {
      finale. À changer si le site déménage (nom de domaine
      personnalisé, autre hébergeur…).
      ------------------------------------------------------- */
-  siteUrl: "https://maxx-l7.github.io/MaderoShape",
+  siteUrl: "https://maderoshape.fr",
 
   /* -------------------------------------------------------
      12. Notification par e-mail (EmailJS)
